@@ -18,7 +18,7 @@ ARG LIBNVINFER_MAJOR_VERSION=6
 # Needed for string substitution
 SHELL ["/bin/bash", "-c"]
 # Pick up some TF dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends --allow-unauthenticated \
         build-essential \
         cuda-command-line-tools-${CUDA/./-} \
         # There appears to be a regression in libcublas10=10.2.2.89-1 which
@@ -38,6 +38,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pkg-config \
         software-properties-common \
         unzip
+
+# install packages
+RUN apt -y update
+RUN apt install -y python3-dev
+RUN apt install -y git
+RUN apt install -y wget
+
+# CarRacing
+RUN apt install -y libopenmpi-dev
+RUN apt install -y xvfb
+RUN apt install -y python-opengl
+RUN apt install -y fontconfig
+
+# Doom
+RUN apt install -y cmake
+RUN apt install -y gcc
+RUN apt install -y unzip
+RUN apt install -y zlib1g-dev
+RUN apt install -y libjpeg-dev
+RUN apt install -y libsdl2-dev
+RUN apt install -y libboost-all-dev
+RUN apt install -y gdb
 
 # Install TensorRT if not building for PowerPC
 RUN [[ "${ARCH}" = "ppc64le" ]] || { apt-get update && \
@@ -88,28 +110,6 @@ WORKDIR /home/ubuntu/WM
 
 # pass the requirements file
 COPY . .
-
-# install packages
-RUN apt -y update
-RUN apt install -y python3-dev
-RUN apt install -y git
-RUN apt install -y wget
-
-# CarRacing
-RUN apt install -y libopenmpi-dev
-RUN apt install -y xvfb
-RUN apt install -y python-opengl
-RUN apt install -y fontconfig
-
-# Doom
-RUN apt install -y cmake
-RUN apt install -y gcc
-RUN apt install -y unzip
-RUN apt install -y zlib1g-dev
-RUN apt install -y libjpeg-dev
-RUN apt install -y libsdl2-dev
-RUN apt install -y libboost-all-dev
-RUN apt install -y gdb
 
 # install pip packages
 RUN pip3 install --upgrade pip
