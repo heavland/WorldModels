@@ -39,27 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends --allow-unauthe
         software-properties-common \
         unzip
 
-# install packages
-RUN apt -y update
 RUN apt install -y python3-dev
-RUN apt install -y git
-RUN apt install -y wget
-
-# CarRacing
-RUN apt install -y libopenmpi-dev
-RUN apt install -y xvfb
-RUN apt install -y python-opengl
-RUN apt install -y fontconfig
-
-# Doom
-RUN apt install -y cmake
-RUN apt install -y gcc
-RUN apt install -y unzip
-RUN apt install -y zlib1g-dev
-RUN apt install -y libjpeg-dev
-RUN apt install -y libsdl2-dev
-RUN apt install -y libboost-all-dev
-RUN apt install -y gdb
 
 # Install TensorRT if not building for PowerPC
 RUN [[ "${ARCH}" = "ppc64le" ]] || { apt-get update && \
@@ -110,6 +90,35 @@ WORKDIR /home/ubuntu/WM
 
 # pass the requirements file
 COPY . .
+
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC
+
+# install packages
+RUN apt -y update
+RUN apt install -y git
+RUN apt install -y wget
+
+RUN echo "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ xenial main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ xenial-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ xenial-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ xenial-security main restricted universe multiverse" >> /etc/apt/sources.list
+RUN apt-get update
+
+# CarRacing
+RUN apt install -y libopenmpi-dev
+RUN apt install -y xvfb
+RUN apt install -y python-opengl
+RUN apt install -y fontconfig
+
+# Doom
+RUN apt install -y cmake
+RUN apt install -y gcc
+RUN apt install -y unzip
+RUN apt install -y zlib1g-dev
+RUN apt install -y libjpeg-dev
+RUN apt install -y libsdl2-dev
+RUN apt install -y libboost-all-dev
+RUN apt install -y gdb
 
 # install pip packages
 RUN pip3 install --upgrade pip
