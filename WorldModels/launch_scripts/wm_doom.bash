@@ -1,5 +1,5 @@
 CONFIG_PATH=configs/doom.config
-for i in `seq 1 12`;
+for i in `seq 1 64`;
 do
   echo worker $i
   CUDA_VISIBLE_DEVICES=-1 xvfb-run -a python extract.py -c $CONFIG_PATH &
