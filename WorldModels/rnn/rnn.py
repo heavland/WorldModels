@@ -43,14 +43,15 @@ class MDNRNN(tf.keras.Model):
             '''
             This loss function is defined for N*k components each containing a gaussian of 1 feature
             '''
-            mdnrnn_params = y_pred
-            y_true = tf.reshape(y_true, [batch_size, -1, z_size + 1]) # +1 for mask
+            mdnrnn_params = tf.cast(y_pred, tf.float32)
+            y_true = tf.cast(tf.reshape(y_true, [batch_size, -1, z_size + 1]), tf.float32) # +1 for mask
             z_true, mask = y_true[:, :, :-1], y_true[:, :, -1:]
             # Reshape inputs in case this is used in a TimeDistribued layer
             mdnrnn_params = tf.reshape(mdnrnn_params, [-1, 3*num_mixture], name='reshape_ypreds')
             vae_z, mask = tf.reshape(z_true, [-1, 1]), tf.reshape(mask, [-1, 1])
             
             out_mu, out_logstd, out_logpi = tf.split(mdnrnn_params, num_or_size_splits=3, axis=1, name='mdn_coef_split')
+            out_logstd = tf.clip_by_value(out_logstd, -10.0, 2.0)
             out_logpi = out_logpi - tf.reduce_logsumexp(input_tensor=out_logpi, axis=1, keepdims=True) # normalize
             logSqrtTwoPI = np.log(np.sqrt(2.0 * np.pi))
             lognormal = -0.5 * ((vae_z - out_mu) / tf.exp(out_logstd)) ** 2 - out_logstd - logSqrtTwoPI
@@ -59,26 +60,26 @@ class MDNRNN(tf.keras.Model):
             z_loss = -tf.reduce_logsumexp(input_tensor=v, axis=1, keepdims=True)
             mask = tf.reshape(tf.tile(mask, [1, z_size]), [-1, 1]) # tile b/c we consider z_loss is flattene
             z_loss = mask * z_loss # don't train if episode ends
-            z_loss = tf.reduce_sum(z_loss) / tf.reduce_sum(mask) 
+            z_loss = tf.reduce_sum(z_loss) / tf.maximum(tf.reduce_sum(mask), 1e-8) 
             return z_loss
         def d_loss_func(y_true, y_pred):
-            d_pred = y_pred
-            y_true = tf.reshape(y_true, [batch_size, -1, 1 + 1]) # b/c tf is stupid
+            d_pred = tf.cast(y_pred, tf.float32)
+            y_true = tf.cast(tf.reshape(y_true, [batch_size, -1, 1 + 1]), tf.float32) # b/c tf is stupid
             d_true, mask = y_true[:, :, :-1], y_true[:, :, -1:]
             d_true, mask = tf.reshape(d_true, [-1, 1]), tf.reshape(mask, [-1, 1])
            
             d_loss = tf.nn.weighted_cross_entropy_with_logits(labels=d_true, logits=d_pred, pos_weight=d_true_weight) 
             d_loss = mask * d_loss
-            d_loss = tf.reduce_sum(d_loss) / tf.reduce_sum(mask) # mean of unmasked 
+            d_loss = tf.reduce_sum(d_loss) / tf.maximum(tf.reduce_sum(mask), 1e-8) # mean of unmasked 
             return d_loss
         def r_loss_func(y_true, y_pred):
-            r_pred = y_pred
-            y_true = tf.reshape(y_true, [batch_size, -1, 1 + 1]) # b/c tf is stupid
+            r_pred = tf.cast(y_pred, tf.float32)
+            y_true = tf.cast(tf.reshape(y_true, [batch_size, -1, 1 + 1]), tf.float32) # b/c tf is stupid
             r_true, mask = y_true[:, :, :-1], y_true[:, :, -1:]
             r_true, mask = tf.reshape(r_true, [-1, 1]), tf.reshape(mask, [-1, 1])
             r_loss = tf.expand_dims(tf.keras.losses.MSE(y_true=r_true, y_pred=r_pred), axis=-1)
             r_loss = mask * r_loss
-            r_loss = tf.reduce_sum(r_loss) / tf.reduce_sum(mask)
+            r_loss = tf.reduce_sum(r_loss) / tf.maximum(tf.reduce_sum(mask), 1e-8)
             return r_loss
         losses = {'MDN': z_loss_func}
         if self.args.rnn_r_pred == 1:
